@@ -23,7 +23,7 @@
     "paths": {
       "@common/*": ["./common/*"],
       "@pages/*": ["./pages"],
-      "@utils/*": ["./utils/"]
+      "@utils/*": ["./utils"]
     }
   },
   "include": ["src"],

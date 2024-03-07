@@ -1,118 +1,134 @@
-import React from 'react';
+import { ChangeEvent, FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { Input, InputPassword, ChecBox } from '@common/fields';
+import { useMutation, setCookie, api } from '@utils/';
+
 import { Button } from '@common/buttons';
-import { CheckBox, Input, PasswordInput } from '@common/fields';
-import { IntlText, useIntl, useMutation } from '@features';
-import { createAuth } from '@utils/api';
-import { COOKIE_NAMES, ROUTES } from '@utils/constants';
-import { useStore } from '@utils/contextes';
-import { setCookie, validateIsEmpty } from '@utils/helpers';
-import { useForm } from '@utils/hooks';
 
 import styles from './LoginPage.module.css';
 
-const loginFormValidateSchema = {
-  username: (value: string) => validateIsEmpty(value),
-  password: (value: string) => validateIsEmpty(value)
+const validateIsEmpty = (value: string) => {
+  if (!value) return 'field required';
+  return null;
 };
 
-interface LoginFormValues {
+const validateUsername = (value: string) => {
+  return validateIsEmpty(value);
+};
+
+const validatePassword = (value: string) => {
+  return validateIsEmpty(value);
+};
+
+const loginFormValidateSchema = {
+  username: validateUsername,
+  password: validatePassword
+};
+
+const validateLoginForm = (name: keyof typeof loginFormValidateSchema, value: string) => {
+  return loginFormValidateSchema[name](value);
+};
+
+interface FormErrors {
+  username: string | null;
+  password: string | null;
+}
+
+interface User {
   username: string;
   password: string;
-  isNotMyDevice: boolean;
+  id: string;
 }
 
 export const LoginPage = () => {
-  const { setStore } = useStore();
   const navigate = useNavigate();
-  const intl = useIntl();
+  const [formValues, setFormValues] = useState({
+    username: '',
+    password: '',
+    isNotMyDevice: false
+  });
+  // const { mutation: authMutation, isLoading: authLoading } = useMutation<typeof formValues, User>(
+  //   'http://localhost:4000/auth',
+  //   'POST'
+  // );
 
-  const { mutationAsync: authMutation, isLoading: authLoading } = useMutation(
-    'auth',
-    (params: AuthReqPostParams) => createAuth({ params })
+  const { mutation: authMutation, isLoading: authLoading } = useMutation<typeof formValues, User>(
+    (values) => api.post('auth', values)
   );
 
-  const { values, errors, setFieldValue, handleSubmit, setIsSubmiting } = useForm<LoginFormValues>({
-    intialValues: { username: '', password: '', isNotMyDevice: false },
-    validateSchema: loginFormValidateSchema,
-    validateOnChange: false,
-    onSubmit: async (values) => {
-      const response = await authMutation(values);
-      if (!response.success) return;
+  // const { data } = useQuery('http://localhost:4000/users', [formValues.username]);
+  const [formErrors, setFormErrors] = useState<FormErrors>({ username: null, password: null });
 
-      if (values.isNotMyDevice) {
-        setCookie(COOKIE_NAMES.IS_NOT_MY_DEVICE, new Date().getTime() + 30 * 60000);
-      }
+  const handlerOnSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const response = await authMutation(formValues);
 
-      setStore({ user: response.data, service: { isLogined: true } });
-      navigate(ROUTES.MAIN);
-      setIsSubmiting(false);
+    if (!!response && formValues.isNotMyDevice) {
+      setCookie('doggee-isNotMyDevice', new Date().getTime() + 30 * 60000);
     }
-  });
+  };
 
   return (
-    <div className={styles.page}>
+    <div className={styles.login_page}>
       <div className={styles.container}>
-        <div className={styles.container_header}>DOGGEE</div>
-        <form className={styles.form_container} onSubmit={handleSubmit}>
+        <div className={styles.header_container}>DOGGEE</div>
+        <form className={styles.form_container} onSubmit={handlerOnSubmit}>
           <div className={styles.input_container}>
             <Input
               disabled={authLoading}
-              value={values.username}
-              label={intl.translateMessage('field.input.username.label')}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                const username = event.target.value;
-                setFieldValue('username', username);
+              value={formValues.username}
+              type='text'
+              label='username'
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                const username = e.target.value;
+                setFormValues({ ...formValues, username });
+                const error = validateLoginForm('username', username);
+                if (error) setFormErrors({ ...formErrors, username: error });
               }}
-              {...(!!errors &&
-                !!errors.username && {
-                  isError: !!errors.username,
-                  helperText: errors.username
-                })}
+              {...(!!formErrors.username && {
+                isError: !!formErrors.username,
+                helperText: formErrors.username
+              })}
             />
           </div>
           <div className={styles.input_container}>
-            <PasswordInput
+            <InputPassword
               disabled={authLoading}
-              value={values.password}
-              label={intl.translateMessage('field.input.password.label')}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                const password = event.target.value;
-                setFieldValue('password', password);
-              }}
-              {...(!!errors &&
-                !!errors.password && {
-                  isError: !!errors.password,
-                  helperText: errors.password
-                })}
-            />
-          </div>
-          <div className={styles.input_container}>
-            <CheckBox
-              disabled={authLoading}
-              checked={values.isNotMyDevice}
-              label={intl.translateMessage('field.checkbox.isNotMyDevice.label')}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                const isNotMyDevice = event.target.checked;
-                setFieldValue('isNotMyDevice', isNotMyDevice);
-              }}
-            />
-          </div>
+              value={formValues.password}
+              isError={!!formErrors.password}
+              label='password'
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                const password = e.target.value;
+                setFormValues({ ...formValues, password });
 
-          <Button type='submit' isLoading={authLoading}>
-            <IntlText path='button.signIn' />
-          </Button>
+                const error = validateLoginForm('password', password);
+                if (error) setFormErrors({ ...formValues, password: error });
+              }}
+              {...(!!formErrors.password && {
+                isError: !!formErrors.password,
+                helperText: formErrors.password
+              })}
+            />
+          </div>
+          <div className={styles.input_container}>
+            <ChecBox
+              checked={formValues.isNotMyDevice}
+              label='This is not my device'
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                const notMyComputer = e.target.checked;
+                setFormValues({ ...formValues, isNotMyDevice: notMyComputer });
+              }}
+            />
+          </div>
+          <div>
+            <Button isLoading={authLoading} type='submit'>
+              Sign in
+            </Button>
+          </div>
         </form>
-
-        <div
-          role='link'
-          tabIndex={0}
-          aria-hidden
-          className={styles.sing_up_container}
-          onClick={() => navigate(ROUTES.REGISTRATION)}
-        >
-          <IntlText path='page.login.createNewAccont' />
+        <div className={styles.sing_up_container} onClick={() => navigate('/registration')}>
+          Create new accaunt
         </div>
       </div>
     </div>

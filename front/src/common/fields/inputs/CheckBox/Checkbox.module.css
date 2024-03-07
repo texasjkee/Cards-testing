@@ -1,0 +1,48 @@
+.checkbox_container {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.lable {
+  font-size: 12px;
+  margin-left: 5px;
+  display: inline-block;
+}
+
+.checkbox {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 0.07rem;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 0.07rem;
+}
+
+.custom_checkbox {
+  display: inline-block;
+  cursor: pointer;
+  width: 15px;
+  height: 14px;
+  border: 2px solid var(--color-accent-seventy-percent);
+  background: transparent;
+  border-radius: 0.35rem;
+}
+
+.custom_checkbox:hover {
+  border: 2px solid var(--color-accent);
+}
+
+.checkbox:checked~.custom_checkbox {
+  border: none;
+  background-image: url('../../../../static/images/checkbox.svg');
+}
+
+.label {
+  user-select: none;
+  color: var(--color-text);
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.85rem;
+}

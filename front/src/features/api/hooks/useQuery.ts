@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { useApiClient } from '../context';
 
 export const useQuery = <K>(
@@ -8,11 +6,11 @@ export const useQuery = <K>(
   config?: ApiClientHooksConfig<K>
 ) => {
   const apiClient = useApiClient();
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
-  const [data, setData] = React.useState<K | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [data, setData] = useState<K | null>(null);
 
-  React.useEffect(
+  useEffect(
     () => {
       const key = typeof deps === 'string' ? deps : deps[0];
       if (apiClient.cache.queries[key]) {
@@ -61,3 +59,9 @@ export const useQuery = <K>(
 
   return { data, error, isLoading };
 };
+function useState(arg0: boolean): [any, any] {
+  throw new Error('Function not implemented.');
+}
+function useEffect(arg0: () => void, arg1: [string, ...any[]] | never[]) {
+  throw new Error('Function not implemented.');
+}
